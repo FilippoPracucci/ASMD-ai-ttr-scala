@@ -37,7 +37,7 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
     when(mockModel.chat(anyString())).thenReturn(s"{\"action\": \"${AIPlayerAction.DRAW_CARDS.action}\"}")
     val aiPlayer = AIPlayer(mockModel, player, gameMap)
     val decision: (AIPlayerAction, _) = aiPlayer.nextAction
-    decision._1 should be (AIPlayerAction.DRAW_CARDS)
+    decision._1 should be(AIPlayerAction.DRAW_CARDS)
 
   it should "return parsed choice of claiming a route" in:
     when(mockModel.chat(anyString())).thenReturn(s"""
@@ -45,5 +45,5 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
     """.stripMargin)
     val aiPlayer = AIPlayer(mockModel, player, gameMap)
     val action: (AIPlayerAction, Option[(CityName, CityName)]) = aiPlayer.nextAction
-    action._1 should be (AIPlayerAction.CLAIM_ROUTE)
-    action._2 should be (Some(("Roma", "Palermo")))
+    action._1 should be(AIPlayerAction.CLAIM_ROUTE)
+    action._2 should be(Some(("Roma", "Palermo")))

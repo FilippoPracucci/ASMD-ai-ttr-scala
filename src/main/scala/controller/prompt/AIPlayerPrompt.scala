@@ -3,19 +3,17 @@ package controller.prompt
 import model.player.Player
 import view.GameView.City
 
-/**
-  * Provides prompts for AI players as formatted strings.
+/** Provides prompts for AI players as formatted strings.
   */
 trait AIPlayerPrompt:
-  /**
-   * Creates a prompt string for the AI based on the player and available routes.
-   * @param player
-   *   the player controlled by the AI.
-   * @param routes
-   *   the set of available routes, as tuples of city names.
-   * @return
-   *   a formatted prompt string.
-   */
+  /** Creates a prompt string for the AI based on the player and available routes.
+    * @param player
+    *   the player controlled by the AI.
+    * @param routes
+    *   the set of available routes, as tuples of city names.
+    * @return
+    *   a formatted prompt string.
+    */
   def toPromptString(player: Player, routes: Set[(City, City)]): String
 
 /** The factory for [[AIPlayerPrompt]] instances. */
@@ -31,8 +29,7 @@ object AIPlayerPrompt:
       |{"action": "draw"} or {"action": "claim", "route": {"city1": <c1>, "city2": <c2>}}. No explanation.
     """.stripMargin
 
-  /**
-    * Creates a [[AIPlayerPrompt]].
+  /** Creates a [[AIPlayerPrompt]].
     *
     * @return
     *   a [[AIPlayerPrompt]] created.
