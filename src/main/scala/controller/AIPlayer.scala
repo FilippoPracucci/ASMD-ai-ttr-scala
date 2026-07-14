@@ -49,12 +49,12 @@ object AIPlayer:
     private val prompt = AIPlayerPrompt()
 
     override def nextAction: (AIPlayerAction, Option[(City, City)]) =
+      import scala.util.Try
       val promptStr = prompt.toPromptString(player, getUnclaimedRoutes)
-      parser.parse(chatModel.chat(promptStr)) match
-        case Right(AIPlayerResponse.ClaimRoute(city1, city2)) =>
+      Try(parser.parse(chatModel.chat(promptStr))).toOption.flatMap(_.toOption) match
+        case Some(AIPlayerResponse.ClaimRoute(city1, city2)) if isValidRoute((city1, city2)) =>
           (AIPlayerAction.CLAIM_ROUTE, Some((city1, city2)))
-        case _ =>
-          (AIPlayerAction.DRAW_CARDS, None)
+        case _ => (AIPlayerAction.DRAW_CARDS, None)
 
     private def getUnclaimedRoutes: Set[(City, City)] = gameMap.routes
       .filter(route =>
@@ -62,3 +62,7 @@ object AIPlayer:
           .exists(_.isEmpty)
       )
       .map(route => (route.connectedCities._1.name, route.connectedCities._2.name))
+
+    private def isValidRoute: ((City, City)) => Boolean = route =>
+      getUnclaimedRoutes.intersect(Set((route._1, route._2), (route._2, route._1))).nonEmpty
+

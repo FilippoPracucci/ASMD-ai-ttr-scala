@@ -30,20 +30,34 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
   private var gameMap: GameMap = GameMap()(using loader)
   private val objective: ObjectiveCompletion = ObjectiveWithCompletion(("Roma", "Palermo"), 20)
   private val player: Player = Player(playerId = PlayerId, objective = objective)
+  private var aiPlayer: AIPlayer = AIPlayer(mockModel, player, gameMap)
 
-  override def beforeEach(): Unit = gameMap = GameMap()(using loader)
+  override def beforeEach(): Unit = {
+    gameMap = GameMap()(using loader)
+    aiPlayer = AIPlayer(mockModel, player, gameMap)
+  }
 
   "An AIPlayer" should "return parsed choice of drawing cards" in:
     when(mockModel.chat(anyString())).thenReturn(s"{\"action\": \"${AIPlayerAction.DRAW_CARDS.action}\"}")
-    val aiPlayer = AIPlayer(mockModel, player, gameMap)
-    val decision: (AIPlayerAction, _) = aiPlayer.nextAction
-    decision._1 should be(AIPlayerAction.DRAW_CARDS)
+    val action: (AIPlayerAction, _) = aiPlayer.nextAction
+    action._1 should be(AIPlayerAction.DRAW_CARDS)
 
   it should "return parsed choice of claiming a route" in:
     when(mockModel.chat(anyString())).thenReturn(s"""
-      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Palermo"}}
+      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
     """.stripMargin)
-    val aiPlayer = AIPlayer(mockModel, player, gameMap)
     val action: (AIPlayerAction, Option[(CityName, CityName)]) = aiPlayer.nextAction
     action._1 should be(AIPlayerAction.CLAIM_ROUTE)
-    action._2 should be(Some(("Roma", "Palermo")))
+    action._2 should be(Some(("Roma", "Venezia")))
+
+  it should "fallback on unparsable response and return draw cards" in:
+    when(mockModel.chat(anyString())).thenReturn("invalid response")
+    val action: (AIPlayerAction, _) = aiPlayer.nextAction
+    action._1 should be(AIPlayerAction.DRAW_CARDS)
+
+  it should "fallback when LLM returns an occupied or non-existent route and return draw cards" in:
+    when(mockModel.chat(anyString())).thenReturn(s"""
+      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Palermo"}}
+    """.stripMargin)
+    val action: (AIPlayerAction, _) = aiPlayer.nextAction
+    action._1 should be(AIPlayerAction.DRAW_CARDS)
