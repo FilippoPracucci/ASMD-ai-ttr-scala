@@ -1,4 +1,8 @@
-# PPS-24-ttr-scala
+# ASMD-ai-ttr-scala
+
+The application is based on [PPS-24-ttr-scala](https://github.com/FilippoPracucci/PPS-24-ttr-scala.git), to which has
+been integrated an LLM to play the game as an AI player. In addition, the development has exploited AI-assisted
+software engineering techniques.
 
 ## Description
 
