@@ -9,16 +9,18 @@ import org.scalatestplus.mockito.MockitoSugar.mock
 
 class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
   import dev.langchain4j.model.chat.ChatModel
-  import view.GameView.City as CityName
   import config.Loader
   import model.map.{City, GameMap, Route}
   import model.player.Player
   import model.utils.Color
   import model.objective.{ObjectiveCompletion, ObjectiveWithCompletion}
   import model.utils.PlayerColor
+  import scala.concurrent.ExecutionContext.Implicits.global
+  import scala.util.Success
 
   private val TimeoutMillis = 5000
   private val PlayerId = PlayerColor.GREEN
+  private val ErrorMessage = "AIPlayer.nextAction failed to return a valid action"
 
   private val mockModel: ChatModel = mock[ChatModel]
   private val routes = Set(
@@ -39,25 +41,39 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
 
   "An AIPlayer" should "return parsed choice of drawing cards" in:
     when(mockModel.chat(anyString())).thenReturn(s"{\"action\": \"${AIPlayerAction.DRAW_CARDS.action}\"}")
-    val action: (AIPlayerAction, _) = aiPlayer.nextAction
-    action._1 should be(AIPlayerAction.DRAW_CARDS)
+    aiPlayer.nextAction.onComplete:
+      case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
+      case _ => fail(ErrorMessage)
 
   it should "return parsed choice of claiming a route" in:
     when(mockModel.chat(anyString())).thenReturn(s"""
       |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
     """.stripMargin)
-    val action: (AIPlayerAction, Option[(CityName, CityName)]) = aiPlayer.nextAction
-    action._1 should be(AIPlayerAction.CLAIM_ROUTE)
-    action._2 should be(Some(("Roma", "Venezia")))
+    aiPlayer.nextAction.onComplete:
+      case Success(action) =>
+        action._1 should be(AIPlayerAction.CLAIM_ROUTE)
+        action._2 should be(Some(("Roma", "Venezia")))
+      case _ => fail(ErrorMessage)
 
   it should "fallback on unparsable response and return draw cards" in:
     when(mockModel.chat(anyString())).thenReturn("invalid response")
-    val action: (AIPlayerAction, _) = aiPlayer.nextAction
-    action._1 should be(AIPlayerAction.DRAW_CARDS)
+    aiPlayer.nextAction.onComplete:
+      case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
+      case _ => fail(ErrorMessage)
 
-  it should "fallback when LLM returns an occupied or non-existent route and return draw cards" in:
+  it should "fallback when LLM returns a non-existent route and return draw cards" in:
     when(mockModel.chat(anyString())).thenReturn(s"""
       |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Palermo"}}
     """.stripMargin)
-    val action: (AIPlayerAction, _) = aiPlayer.nextAction
-    action._1 should be(AIPlayerAction.DRAW_CARDS)
+    aiPlayer.nextAction.onComplete:
+      case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
+      case _ => fail(ErrorMessage)
+
+  it should "fallback when LLM returns an already occupied route and return draw cards" in:
+    when(mockModel.chat(anyString())).thenReturn(s"""
+      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
+    """.stripMargin)
+    gameMap.claimRoute(("Roma", "Venezia"), PlayerId)
+    aiPlayer.nextAction.onComplete:
+      case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
+      case _ => fail(ErrorMessage)

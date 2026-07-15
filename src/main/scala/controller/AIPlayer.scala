@@ -7,6 +7,7 @@ import dev.langchain4j.model.chat.ChatModel
 import model.map.GameMap
 import model.player.Player
 import view.GameView.City
+import scala.concurrent.{Future, ExecutionContext}
 
 /** The actions that an AI player can make when asked for its next action.
   * @param action
@@ -26,7 +27,7 @@ trait AIPlayer:
     *   a tuple where the first element is the [[AIPlayerAction]] taken and the second is optionally a pair of [[City]]
     *   representing the route to claim when the decision is [[AIPlayerAction.CLAIM_ROUTE]].
     */
-  def nextAction: (AIPlayerAction, Option[(City, City)])
+  def nextAction: Future[(AIPlayerAction, Option[(City, City)])]
 
 /** The factory for [[AIPlayer]] instances. */
 object AIPlayer:
@@ -45,16 +46,26 @@ object AIPlayer:
     AIPlayerImpl(chatModel, player, gameMap)
 
   private case class AIPlayerImpl(chatModel: ChatModel, player: Player, gameMap: GameMap) extends AIPlayer:
+    private val MaxRetries = 3
+
     private val parser = AIPlayerResponseParser()
     private val prompt = AIPlayerPrompt()
 
-    override def nextAction: (AIPlayerAction, Option[(City, City)]) =
+    override def nextAction: Future[(AIPlayerAction, Option[(City, City)])] =
       import scala.util.Try
-      val promptStr = prompt.toPromptString(player, getUnclaimedRoutes)
-      Try(parser.parse(chatModel.chat(promptStr))).toOption.flatMap(_.toOption) match
-        case Some(AIPlayerResponse.ClaimRoute(city1, city2)) if isValidRoute((city1, city2)) =>
-          (AIPlayerAction.CLAIM_ROUTE, Some((city1, city2)))
-        case _ => (AIPlayerAction.DRAW_CARDS, None)
+      import scala.annotation.tailrec
+      import ExecutionContext.Implicits.global
+
+      @tailrec
+      def attempt(remainingRetries: Int): (AIPlayerAction, Option[(City, City)]) =
+        val promptStr = prompt.toPromptString(player, getUnclaimedRoutes)
+        Try(parser.parse(chatModel.chat(promptStr))).toOption.flatMap(_.toOption) match
+          case Some(AIPlayerResponse.ClaimRoute(city1, city2)) if isValidRoute((city1, city2)) =>
+            (AIPlayerAction.CLAIM_ROUTE, Some((city1, city2)))
+          case _ if remainingRetries > 0 => attempt(remainingRetries - 1)
+          case _ => (AIPlayerAction.DRAW_CARDS, None)
+
+      Future(attempt(MaxRetries))
 
     private def getUnclaimedRoutes: Set[(City, City)] = gameMap.routes
       .filter(route =>
@@ -65,4 +76,3 @@ object AIPlayer:
 
     private def isValidRoute: ((City, City)) => Boolean = route =>
       getUnclaimedRoutes.intersect(Set((route._1, route._2), (route._2, route._1))).nonEmpty
-
