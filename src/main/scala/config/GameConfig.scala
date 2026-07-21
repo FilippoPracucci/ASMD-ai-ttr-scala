@@ -52,6 +52,12 @@ case object GameConfig:
       |8 => ${PointsPerRouteLength(8)}
       |""".stripMargin
 
+case object ModelConfig:
+  val BaseUrl = "http://localhost:11434"
+  val ModelName = "qwen3.5:0.8b"
+  val Temperature = 0.6
+  val TimeoutMinutes = 3
+
 /** Object that contains constant values used in the game view. */
 case object GameViewConfig:
   val FrameTitle = "Ticket to Ride"

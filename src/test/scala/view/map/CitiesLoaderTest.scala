@@ -16,6 +16,8 @@ class CitiesLoaderTest extends AnyFlatSpec with Matchers:
     override def addCity(city: City, x: Double, y: Double, width: Double, height: Double): Unit = ()
     override def addRoute(connectedCities: (City, City), length: Int, color: Color): Unit = ()
     override def updateRoute(connectedCities: (City, City), color: Color): Unit = ()
+    override def enable(): Unit = ()
+    override def disable(): Unit = ()
 
   private given MapView = DummyMapView
 

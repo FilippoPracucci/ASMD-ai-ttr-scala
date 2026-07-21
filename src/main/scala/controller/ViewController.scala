@@ -36,6 +36,13 @@ trait ViewController:
   /** Shows the game rules to the player. */
   def showRules(): Unit
 
+  /** Executes the given action in the view.
+    *
+    * @param action
+    *   the action to execute.
+    */
+  def executeAction(action: => Unit): Unit
+
 /** Companion object for [[ViewController]]. */
 object ViewController:
   import model.player.Player
@@ -46,10 +53,13 @@ object ViewController:
     *   the turn manager
     * @param players
     *   the list of players
+    * @param aiPlayers
+    *   the list of AI players
     * @return
     *   the created [[ViewController]]
     */
-  def apply(turnManager: TurnManager, players: List[Player]): ViewController = ViewControllerImpl(turnManager, players)
+  def apply(turnManager: TurnManager, players: List[Player], aiPlayers: List[AIPlayer]): ViewController =
+    ViewControllerImpl(turnManager, players, aiPlayers)
 
   private object ImportHelper:
     export view.cards.{HandView, CardView}
@@ -61,7 +71,9 @@ object ViewController:
     export config.GameViewConfig.*
     export config.GameConfig.{ErrorDescription, RulesDescription}
 
-  private class ViewControllerImpl(turnManager: TurnManager, players: List[Player]) extends ViewController:
+  private class ViewControllerImpl(turnManager: TurnManager, players: List[Player], aiPlayers: List[AIPlayer])
+      extends ViewController:
+
     import ImportHelper.*
 
     private val handView = HandView(currentHandCardsView)
@@ -103,11 +115,14 @@ object ViewController:
       gameView.updateHandView(handView)
       gameView.updateCompletionCheckBox(currentPlayer.objective.completed)
       gameView.updateObjective(currentPlayerObjective)
+      if turnManager.currentPlayerIsAI then gameView.turnOffFocusability() else gameView.turnOnFocusability()
 
     override def reportError(gameError: GameError): Unit =
       gameView.show(ErrorDescription(gameError), ReportErrorTitle, MessageType.Error)
 
     override def showRules(): Unit = gameView.show(RulesDescription, RulesTitle, MessageType.Response)
+
+    override def executeAction(action: => Unit): Unit = gameView.executeAction(action)
 
     private def currentPlayer: Player = turnManager.currentPlayer
 

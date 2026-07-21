@@ -40,6 +40,14 @@ private case class InitViewHelper(frame: MainFrame, handPanel: BoxPanel, mapView
     initMap()
     frame.repaint()
 
+  def turnOnFocusability(): Unit =
+    Set(rulesButton, drawButton).foreach(_.enabled = true)
+    mapView.enable()
+
+  def turnOffFocusability(): Unit =
+    Set(rulesButton, drawButton).foreach(_.enabled = false)
+    mapView.disable()
+
   private def configSouthPanel(): Unit =
     import config.GameViewConfig.BorderConfig.*
     val BorderWeight = 5

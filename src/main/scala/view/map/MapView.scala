@@ -49,6 +49,12 @@ trait MapView:
     */
   def updateRoute(connectedCities: (City, City), color: Color): Unit
 
+  /** Enables the map view. */
+  def enable(): Unit
+
+  /** Disables the map view. */
+  def disable(): Unit
+
 /** Companion object for [[MapView]]. */
 object MapView:
   import controller.GameController
@@ -80,6 +86,8 @@ object MapView:
     private type Vertex = mxCell // type of vertices/edges in JGraphX library
     private var vertices: Map[City, Vertex] = Map()
 
+    private var _isSensibleToMouseEvents: Boolean = true
+
     initView()
 
     private def initView(): Unit =
@@ -89,7 +97,7 @@ object MapView:
         import javax.swing.JComponent
         val graphControl = new Component { override lazy val peer: JComponent = graphComponent.getGraphControl }
         graphControl.listenTo(graphControl.mouse.clicks)
-        graphControl.reactions += { case e: MouseReleased => handler(e) }
+        graphControl.reactions += { case e: MouseReleased if _isSensibleToMouseEvents => handler(e) }
 
       graphComponent.setDefaultStyle()
       onMouseReleased(e =>
@@ -133,3 +141,7 @@ object MapView:
           graphStyleManager.edgeStyle(color, Dashed),
           Array(graph.getEdgesBetween(vertices(connectedCities._1), vertices(connectedCities._2))(FirstEdge))
         )
+
+    override def enable(): Unit = _isSensibleToMouseEvents = true
+
+    override def disable(): Unit = _isSensibleToMouseEvents = false

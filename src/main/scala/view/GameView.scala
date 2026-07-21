@@ -42,6 +42,19 @@ trait GameView[Color] extends PlayerGameView:
     */
   def show(message: String, title: String, messageType: MessageType): Unit
 
+  /** Executes the given action.
+    *
+    * @param action
+    *   the action to execute.
+    */
+  def executeAction(action: => Unit): Unit
+
+  /** Turns on the focusability of the view. */
+  def turnOnFocusability(): Unit
+
+  /** Turns off the focusability of the view. */
+  def turnOffFocusability(): Unit
+
   /** Show the message of end game to the user and then close the interface. */
   def endGame(playerScores: Seq[(PlayerName, Points)]): Unit
 
@@ -98,6 +111,8 @@ object GameView:
     override def show(message: String, title: String, messageType: MessageType): Unit =
       Dialog.showMessage(frame, message, title, messageType.toIcon)
 
+    override def executeAction(action: => Unit): Unit = Swing.onEDT(action)
+
     extension (messageType: MessageType)
       private def toIcon = messageType match
         case Info => Dialog.Message.Info
@@ -118,3 +133,4 @@ object GameView:
     export playerGameView.*
     export frame.open
     export mapView.{addRoute, updateRoute}
+    export initViewHelper.{turnOnFocusability, turnOffFocusability}
