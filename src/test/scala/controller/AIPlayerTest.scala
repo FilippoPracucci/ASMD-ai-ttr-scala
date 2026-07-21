@@ -1,7 +1,7 @@
 package controller
 
 import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -41,7 +41,7 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
 
   "An AIPlayer" should "return parsed choice of drawing cards" in:
     when(mockModel.chat(anyString())).thenReturn(s"{\"action\": \"${AIPlayerAction.DRAW_CARDS.action}\"}")
-    aiPlayer.nextAction.onComplete:
+    aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
 
@@ -49,7 +49,7 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
     when(mockModel.chat(anyString())).thenReturn(s"""
       |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
     """.stripMargin)
-    aiPlayer.nextAction.onComplete:
+    aiPlayer.nextAction().onComplete:
       case Success(action) =>
         action._1 should be(AIPlayerAction.CLAIM_ROUTE)
         action._2 should be(Some(("Roma", "Venezia")))
@@ -57,7 +57,7 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
 
   it should "fallback on unparsable response and return draw cards" in:
     when(mockModel.chat(anyString())).thenReturn("invalid response")
-    aiPlayer.nextAction.onComplete:
+    aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
 
@@ -65,7 +65,7 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
     when(mockModel.chat(anyString())).thenReturn(s"""
       |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Palermo"}}
     """.stripMargin)
-    aiPlayer.nextAction.onComplete:
+    aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
 
@@ -74,6 +74,13 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
       |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
     """.stripMargin)
     gameMap.claimRoute(("Roma", "Venezia"), PlayerId)
-    aiPlayer.nextAction.onComplete:
+    aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
+
+  it should "call the LLM multiple times before fallback" in:
+    when(mockModel.chat(anyString())).thenReturn("2").thenReturn("3").thenReturn("4")
+    aiPlayer.nextAction().onComplete:
+      case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
+      case _ => fail(ErrorMessage)
+    verify(mockModel, atLeastOnce()).chat(anyString())
