@@ -5,10 +5,10 @@ import model.utils.GameError
 /** The controller about drawing cards from the deck. */
 trait DrawCardsController:
   /** Player action that consists in drawing cards from the deck.
-   *
-   * @return
-   *   a [[GameError]] if the action does not succeed and the current player is controlled by the AI.
-   */
+    *
+    * @return
+    *   a [[GameError]] if the action does not succeed and the current player is controlled by the AI.
+    */
   def drawCards(): GameError | Unit
 
 object DrawCardsController:
@@ -21,10 +21,10 @@ object DrawCardsController:
     * @return
     *   the created [[DrawCardsController]].
     */
-  def apply(turnManager: TurnManager, viewController: ViewController): DrawCardsController =
+  def apply(turnManager: AIPlayersTurnManager, viewController: ViewController): DrawCardsController =
     DrawCardsControllerImpl(turnManager, viewController)
 
-  private class DrawCardsControllerImpl(turnManager: TurnManager, viewController: ViewController)
+  private class DrawCardsControllerImpl(turnManager: AIPlayersTurnManager, viewController: ViewController)
       extends DrawCardsController:
 
     override def drawCards(): GameError | Unit =
@@ -33,5 +33,4 @@ object DrawCardsController:
         case Right(_) =>
           turnManager.switchTurn()
           viewController.updateViewNewTurn()
-        case Left(gameError) =>
-          if turnManager.currentPlayerIsAI then gameError else viewController.reportError(gameError)
+        case Left(gameError) => gameError

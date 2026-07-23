@@ -53,13 +53,11 @@ object ViewController:
     *   the turn manager
     * @param players
     *   the list of players
-    * @param aiPlayers
-    *   the list of AI players
     * @return
     *   the created [[ViewController]]
     */
-  def apply(turnManager: TurnManager, players: List[Player], aiPlayers: List[AIPlayer]): ViewController =
-    ViewControllerImpl(turnManager, players, aiPlayers)
+  def apply(turnManager: AIPlayersTurnManager, players: List[Player]): ViewController =
+    ViewControllerImpl(turnManager, players)
 
   private object ImportHelper:
     export view.cards.{HandView, CardView}
@@ -71,7 +69,7 @@ object ViewController:
     export config.GameViewConfig.*
     export config.GameConfig.{ErrorDescription, RulesDescription}
 
-  private class ViewControllerImpl(turnManager: TurnManager, players: List[Player], aiPlayers: List[AIPlayer])
+  private class ViewControllerImpl(turnManager: AIPlayersTurnManager, players: List[Player])
       extends ViewController:
 
     import ImportHelper.*

@@ -17,9 +17,9 @@ class TurnManagerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
     color <- PlayerColor.values
   yield playerList +:= Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
 
-  private var turnManager = TurnManager(playerList, List.empty)
+  private var turnManager = TurnManager(playerList)
 
-  override def beforeEach(): Unit = turnManager = TurnManager(playerList, List.empty)
+  override def beforeEach(): Unit = turnManager = TurnManager(playerList)
 
   "A turn manager" should "have the right current player" in:
     turnManager.currentPlayer should be(playerList.head)
