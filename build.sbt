@@ -29,6 +29,8 @@ lazy val root = project
         "dev.langchain4j" % "langchain4j-google-ai-gemini" % "1.17.2",
         "dev.langchain4j" % "langchain4j-open-ai" % "1.17.2",
         "org.scalatest" %% "scalatest" % "3.2.20" % Test,
-        "org.scalatestplus" %% "mockito-5-23" % "3.2.20.0" % "test"
+        "org.scalatestplus" %% "mockito-5-23" % "3.2.20.0" % "test",
+        "io.cucumber" %% "cucumber-scala" % "8.39.3" % Test
+
     )
   )
