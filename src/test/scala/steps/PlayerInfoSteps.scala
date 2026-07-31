@@ -49,7 +49,8 @@ class PlayerInfoSteps extends ScalaDsl with EN with Matchers:
 
   Then("the player should see all routes and their ownership status"):
     gameMap.routes.foreach: route =>
-      gameMap.getPlayerClaimingRoute((route.connectedCities._1.name, route.connectedCities._2.name)) should be equals Right(None)
+      gameMap.getPlayerClaimingRoute((route.connectedCities._1.name,
+          route.connectedCities._2.name)) should be equals Right(None)
 
   Then("the player should see its objective as the cities {string} and {string} to connect"):
     (city1: String, city2: String) =>
@@ -64,9 +65,6 @@ class PlayerInfoSteps extends ScalaDsl with EN with Matchers:
   Then("the player should see the players' scores as a list of {int}"): (score: Int) =>
     players.map(_.score) should contain theSameElementsAs List.fill(players.length)(score)
 
-  private def initPlayers(): List[Player] =
-    var players: List[Player] = List.empty
-    for
-      color <- PlayerColor.values
-    yield players +:= Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
-    players
+  private def initPlayers(): List[Player] = PlayerColor.values.collect {
+    case color => Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
+  }.toList

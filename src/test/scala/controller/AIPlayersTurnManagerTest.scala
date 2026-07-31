@@ -2,10 +2,13 @@ package controller
 
 import dev.langchain4j.model.chat.ChatModel
 import org.mockito.ArgumentMatchers.{any, anyString}
-import org.mockito.Mockito.{atLeastOnce, doNothing, spy, verify, when}
+import org.mockito.Mockito.{atLeastOnce, doNothing, spy, verify}
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.concurrent.Eventually.eventually
+import org.scalatest.concurrent.Futures.timeout
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.{Seconds, Span}
 import org.scalatestplus.mockito.MockitoSugar.mock
 
 class AIPlayersTurnManagerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
@@ -17,7 +20,9 @@ class AIPlayersTurnManagerTest extends AnyFlatSpec with Matchers with BeforeAndA
   import model.map.{GameMap, City, Route}
   import model.utils.Color
 
-  private val mockModel: ChatModel = mock[ChatModel]
+  private val mockModel = mock[ChatModel]
+  private val gameController = mock[GameController]
+
   private val deck: Deck = Deck()
   private val routes = Set(
     Route((City("Roma"), City("Venezia")), 2, Route.SpecificColor(Color.BLACK)),
@@ -26,27 +31,19 @@ class AIPlayersTurnManagerTest extends AnyFlatSpec with Matchers with BeforeAndA
   )
   private val loader: Loader[Set[Route]] = () => routes
   private val gameMap = GameMap()(using loader)
-
-  private var playerList: List[Player] = List.empty
-  for
-    color <- PlayerColor.values
-  yield playerList +:= Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
-
-  private var aiPlayersList: List[AIPlayer] = List.empty
-  for
-    player <- playerList
-    if player.id != playerList.head.id
-  yield aiPlayersList :+= AIPlayer(mockModel, player, gameMap)
+  private val playersList: List[Player] = PlayerColor.values.collect {
+    case color => Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
+  }.toList
+  private val aiPlayersList: List[AIPlayer] = playersList.drop(1).map(player => AIPlayer(mockModel, player, gameMap))
   private var aiPlayerSpy: AIPlayer = spy(aiPlayersList.head)
 
-  private val gameController = mock[GameController]
-  private var turnManager = TurnManager(playerList)
+  private var turnManager = TurnManager(playersList)
   private var aiPlayersTurnManager = AIPlayersTurnManager(aiPlayersList, turnManager, gameController)
 
   override def beforeEach(): Unit =
     doNothing().when(gameController).executeAIAction(any())
     aiPlayerSpy = spy(aiPlayersList.head)
-    turnManager = TurnManager(playerList)
+    turnManager = TurnManager(playersList)
     aiPlayersTurnManager = AIPlayersTurnManager(aiPlayerSpy :: aiPlayersList.tail, turnManager, gameController)
 
   "An AI players turn manager" should "tell if the current player is an AI player" in:
@@ -56,4 +53,7 @@ class AIPlayersTurnManagerTest extends AnyFlatSpec with Matchers with BeforeAndA
 
   it should "handle the turn of an AI player" in:
     aiPlayersTurnManager.switchTurn()
-    verify(aiPlayerSpy).nextAction()
+    eventually(timeout(Span(2, Seconds))):
+      verify(aiPlayerSpy).nextAction()
+      verify(mockModel, atLeastOnce()).chat(anyString())
+      verify(gameController, atLeastOnce()).executeAIAction(any())

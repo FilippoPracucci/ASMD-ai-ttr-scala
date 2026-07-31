@@ -15,10 +15,10 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
   import model.utils.Color
   import model.objective.{ObjectiveCompletion, ObjectiveWithCompletion}
   import model.utils.PlayerColor
+  import controller.AIPlayerAction.{DRAW_CARDS, CLAIM_ROUTE}
   import scala.concurrent.ExecutionContext.Implicits.global
   import scala.util.Success
 
-  private val TimeoutMillis = 5000
   private val PlayerId = PlayerColor.GREEN
   private val ErrorMessage = "AIPlayer.nextAction failed to return a valid action"
 
@@ -34,25 +34,22 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
   private val player: Player = Player(playerId = PlayerId, objective = objective)
   private var aiPlayer: AIPlayer = AIPlayer(mockModel, player, gameMap)
 
-  override def beforeEach(): Unit = {
+  override def beforeEach(): Unit =
     gameMap = GameMap()(using loader)
     aiPlayer = AIPlayer(mockModel, player, gameMap)
-  }
 
   "An AIPlayer" should "return parsed choice of drawing cards" in:
-    when(mockModel.chat(anyString())).thenReturn(s"{\"action\": \"${AIPlayerAction.DRAW_CARDS.action}\"}")
+    when(mockModel.chat(anyString())).thenReturn(DRAW_CARDS.toJson())
     aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
 
   it should "return parsed choice of claiming a route" in:
-    when(mockModel.chat(anyString())).thenReturn(s"""
-      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
-    """.stripMargin)
+    when(mockModel.chat(anyString())).thenReturn(CLAIM_ROUTE.toJson(Some(routes.head)))
     aiPlayer.nextAction().onComplete:
       case Success(action) =>
         action._1 should be(AIPlayerAction.CLAIM_ROUTE)
-        action._2 should be(Some(("Roma", "Venezia")))
+        action._2 should be(Some(routes.head.connectedCities))
       case _ => fail(ErrorMessage)
 
   it should "fallback on unparsable response and return draw cards" in:
@@ -62,17 +59,14 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
       case _ => fail(ErrorMessage)
 
   it should "fallback when LLM returns a non-existent route and return draw cards" in:
-    when(mockModel.chat(anyString())).thenReturn(s"""
-      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Palermo"}}
-    """.stripMargin)
+    val wrongRoute = Route((City("Roma"), City("Brindisi")), 3, Route.SpecificColor(Color.WHITE))
+    when(mockModel.chat(anyString())).thenReturn(CLAIM_ROUTE.toJson(Some(wrongRoute)))
     aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
 
   it should "fallback when LLM returns an already occupied route and return draw cards" in:
-    when(mockModel.chat(anyString())).thenReturn(s"""
-      |{"action": \"${AIPlayerAction.CLAIM_ROUTE.action}\", "route": {"city1": "Roma", "city2": "Venezia"}}
-    """.stripMargin)
+    when(mockModel.chat(anyString())).thenReturn(CLAIM_ROUTE.toJson(Some(routes.head)))
     gameMap.claimRoute(("Roma", "Venezia"), PlayerId)
     aiPlayer.nextAction().onComplete:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
@@ -84,3 +78,13 @@ class AIPlayerTest extends AnyFlatSpec with Matchers with BeforeAndAfterEach:
       case Success(action) => action._1 should be(AIPlayerAction.DRAW_CARDS)
       case _ => fail(ErrorMessage)
     verify(mockModel, atLeastOnce()).chat(anyString())
+
+  extension (aiPlayerAction: AIPlayerAction)
+    private def toJson(route: Option[Route] = None): String = aiPlayerAction match
+      case DRAW_CARDS => s"""{"action": "${aiPlayerAction.action}"}"""
+      case CLAIM_ROUTE if route.nonEmpty => s"""{"action": "${aiPlayerAction.action}", "route": ${route.get.toJson}}"""
+      case _ => throw new IllegalArgumentException("Invalid action")
+
+  extension (route: Route)
+    private def toJson: String =
+      s"""{"city1": "${route.connectedCities._1.name}", "city2": "${route.connectedCities._2.name}"}"""

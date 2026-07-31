@@ -2,7 +2,7 @@ package steps
 
 import config.GameConfig.*
 import config.Loader
-import controller.{ClaimRouteController, DrawCardsController, TurnManager, ViewController}
+import controller.{ClaimRouteController, DrawCardsController, TurnManager}
 import io.cucumber.scala.{EN, ScalaDsl}
 import model.cards.{Card, Deck}
 import model.map.{City, GameMap, Route}
@@ -32,7 +32,6 @@ class PlayerTurnSteps extends ScalaDsl with EN with Matchers:
   private var lastHand = player.hand
   private var lastTrainCars = player.trains
 
-  private val viewController = mock[ViewController]
   private val drawCardsController = mock[DrawCardsController]
   private val claimRouteController = mock[ClaimRouteController]
 
@@ -99,7 +98,7 @@ class PlayerTurnSteps extends ScalaDsl with EN with Matchers:
     gameMap.getPlayerClaimingRoute((from, to)) should be(Right(Some(player.id)))
 
   Then("the player should not own the route from {string} to {string}"): (from: String, to: String) =>
-    gameMap.getPlayerClaimingRoute((from, to)) should matchPattern{ case Right(id) if id != player.id => }
+    gameMap.getPlayerClaimingRoute((from, to)) should matchPattern { case Right(id) if id != player.id => }
 
   And("the deck has at least {int} cards"): (n: Int) =>
     deck.cards.size should be >= n
@@ -129,9 +128,6 @@ class PlayerTurnSteps extends ScalaDsl with EN with Matchers:
   And("the player's score should remain unchanged"):
     player.score shouldBe InitialScore
 
-  private def initPlayers(): List[Player] =
-    var players: List[Player] = List.empty
-    for
-      color <- PlayerColor.values
-    yield players +:= Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
-    players
+  private def initPlayers(): List[Player] = PlayerColor.values.collect {
+    case color => Player(color, deck, objective = ObjectiveWithCompletion(("Paris", "Berlin"), 8))
+  }.toList
