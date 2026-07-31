@@ -2,7 +2,20 @@
 
 The application is based on [PPS-24-ttr-scala](https://github.com/FilippoPracucci/PPS-24-ttr-scala.git), to which has
 been integrated an LLM to play the game as an AI player. In addition, the development has exploited AI-assisted
-software engineering techniques.
+software engineering techniques. Finally, some acceptance tests have been implemented.
+
+## ASMD tasks
+
+The tasks that have been implemented can be found in the branch `feature/ai-player` and are the following:
+
+- **Lab 01 task 3 ("_REQUIRE_")**;
+- **Lab 02 task 2 ("_REENGINEER_")**: combining tests written for the other tasks with mocking through Mockito,
+realizing integration tests for different components (e.g., `ChatModel` in `AIPlayerTest`);
+- **Lab 03 task 3 ("_AI-APP DESIGN_")**;
+- **Lab 03b task 1/2**: exploiting AI-assisted software engineering techniques to implement the AI player following TDD
+approach. In particular, I used copilot with `copilot-instructions.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md` and
+`PRODUCT.md` files. Then I created two agents: one to draft a first implementation given the unit test to pass (following
+TDD approach) and the other to write the Scaladoc.
 
 ## Description
 
