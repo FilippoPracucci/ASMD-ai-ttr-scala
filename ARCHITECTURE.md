@@ -52,4 +52,5 @@ components, initializes the game and links the UI to the logic.
 - `ujson`: library to parse JSON files;
 - `langchain4j`: library to integrate LLMs;
 - `scalatest`: library to write unit tests;
+- `cucumber-scala`: library for writing acceptance tests;
 - `mockito`: library to create mocks and writing integration tests.

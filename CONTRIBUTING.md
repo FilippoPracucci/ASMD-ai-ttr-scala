@@ -22,7 +22,7 @@ traits/classes/objects;
 - `var` variables should be declared as `private` and only accesed/modified through public getter/setter;
 - use `Option` instead of `null`;
 - use `Either` instead of exceptions for error handling;
-- when creating a new ADT, define the `apply` method in the companion object to create a new instance.
+- when creating a new ADT, define the `apply` method in the companion object to create a new instance;
 - private variables with a getter should be named with a leading underscore, e.g. `_myVar`;
 - group related extensions functions;
 - import only what is necessary and where it is necessary (not globally);
