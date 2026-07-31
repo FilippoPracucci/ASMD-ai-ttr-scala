@@ -3,13 +3,11 @@ package controller.parser
 import controller.AIPlayerAction
 import view.GameView.City
 
-/** The responses that can be returned by an AI player.
-  */
+/** The responses that can be returned by an AI player. */
 sealed trait AIPlayerResponse
 
 object AIPlayerResponse:
-  /** The response indicating the AI decided to draw cards.
-    */
+  /** The response indicating the AI decided to draw cards. */
   case object DrawCards extends AIPlayerResponse
 
   /** The response indicating the AI decided to claim a route between two cities.
@@ -21,15 +19,14 @@ object AIPlayerResponse:
     */
   case class ClaimRoute(city1: City, city2: City) extends AIPlayerResponse
 
-/** The parser from the raw JSON response produced by an LLM to a [[AIPlayerResponse]].
-  */
+/** The parser from the raw JSON response produced by an LLM to a [[AIPlayerResponse]]. */
 trait AIPlayerResponseParser:
   /** Try to parse the given JSON string into an [[AIPlayerResponse]].
     *
     * @param json
     *   the raw JSON string.
     * @return
-    *   the [[AIPlayerResponse]]) if parsing succeeds, otherwise @throws an [[IllegalArgumentException]].
+    *   the [[AIPlayerResponse]] if parsing succeeds, otherwise an [[IllegalArgumentException]].
     */
   def parse(json: String): Either[IllegalArgumentException, AIPlayerResponse]
 

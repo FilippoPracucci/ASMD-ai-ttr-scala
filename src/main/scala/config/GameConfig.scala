@@ -54,7 +54,7 @@ case object GameConfig:
 
 case object ModelConfig:
   val BaseUrl = "http://localhost:11434"
-  val ModelName = "qwen3.5:0.8b"
+  val ModelName = "qwen3.5:4b"
   val Temperature = 0.6
   val TimeoutMinutes = 3
 
